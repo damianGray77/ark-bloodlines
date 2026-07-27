@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#111713">
+  <title>ARK Bloodlines — Breeding Tracker</title>
+  <meta name="description" content="A private, offline ARK dinosaur breeding and mutation tracker.">
+  <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48 64x64">
+  <link rel="icon" type="image/png" href="favicon-32.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to tracker</a>
+
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="ARK Bloodlines home">
+      <span class="brand-mark" aria-hidden="true">A</span>
+      <span>
+        <strong>ARK <i>/</i> BLOODLINES</strong>
+        <small>BREEDING LEDGER</small>
+      </span>
+    </a>
+
+    <nav class="primary-nav" aria-label="Primary">
+      <button class="nav-tab is-active" type="button" data-view="herd">Herd</button>
+      <button class="nav-tab" type="button" data-view="incubators">Incubators <span class="nav-count" id="incubator-nav-count">0</span></button>
+      <button class="nav-tab" type="button" data-view="lineage">Lineage</button>
+      <button class="nav-tab" type="button" data-view="planner">Breeding lab</button>
+    </nav>
+
+    <div class="header-actions">
+      <details class="file-menu">
+        <summary class="button button-quiet" aria-label="Data options">Data</summary>
+        <div class="menu-popover">
+          <strong>Your offline ledger</strong>
+          <p>Saved only in this browser. Export a backup before clearing browser data.</p>
+          <button type="button" id="settings-button">Calculator &amp; quality settings</button>
+          <button type="button" id="profiles-button">Custom species profiles</button>
+          <button type="button" id="export-button">Export JSON</button>
+          <button type="button" id="import-button">Import JSON</button>
+          <button class="danger-text" type="button" id="clear-button">Clear all data</button>
+        </div>
+      </details>
+      <button class="button button-primary" type="button" id="add-dino-button"><span aria-hidden="true">＋</span> Add dino</button>
+    </div>
+  </header>
+
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+
+  <main id="workspace" class="app-shell">
+    <section class="overview" aria-label="Herd overview">
+      <div class="overview-heading">
+        <p class="eyebrow">LOCAL SPECIMEN ARCHIVE</p>
+        <h1>Build the line.<br><span>Keep the proof.</span></h1>
+      </div>
+      <div class="metric-grid">
+        <article class="metric">
+          <span class="metric-icon" aria-hidden="true">◇</span>
+          <div><strong id="metric-dinos">0</strong><span>Dinos tracked</span></div>
+        </article>
+        <article class="metric">
+          <span class="metric-icon" aria-hidden="true">⌁</span>
+          <div><strong id="metric-lines">0</strong><span>Species lines</span></div>
+        </article>
+        <article class="metric">
+          <span class="metric-icon" aria-hidden="true">✣</span>
+          <div><strong id="metric-mutations">0</strong><span>Mutation counters</span></div>
+        </article>
+        <article class="metric">
+          <span class="metric-icon" aria-hidden="true">△</span>
+          <div><strong id="metric-level">—</strong><span>Highest current level</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="view is-active" id="herd-view" data-view-panel="herd" aria-labelledby="herd-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ACTIVE ARCHIVE</p>
+          <h2 id="herd-title">Herd register</h2>
+        </div>
+        <p class="section-note">Inherited wild points only. Imprinted and leveled stats stay out of the gene pool.</p>
+      </div>
+
+      <div class="herd-layout">
+        <div class="panel roster-panel">
+          <div class="toolbar">
+            <label class="search-box">
+              <span aria-hidden="true">⌕</span>
+              <span class="sr-only">Search dinos</span>
+              <input id="search-input" type="search" placeholder="Search name, species, line…" autocomplete="off">
+              <kbd>/</kbd>
+            </label>
+            <label>
+              <span class="sr-only">Filter by species</span>
+              <select id="species-filter"><option value="all">All species</option></select>
+            </label>
+            <label>
+              <span class="sr-only">Filter by sex</span>
+              <select id="sex-filter">
+                <option value="all">Any sex</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+            </label>
+            <label>
+              <span class="sr-only">Filter by status</span>
+              <select id="status-filter">
+                <option value="all">Any status</option>
+                <option value="Breeder">Breeder</option>
+                <option value="Growing">Growing</option>
+                <option value="Candidate">Candidate</option>
+                <option value="Retired">Retired</option>
+                <option value="Culled">Culled</option>
+                <option value="Cryo">Cryo</option>
+              </select>
+            </label>
+            <label class="archive-toggle" title="Include retired, culled, and cryopodded dinos in the Herd register">
+              <input id="show-archived" type="checkbox">
+              <span>Show archived</span>
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table class="roster-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="sortable-column" data-sort-column="specimen" aria-sort="none"><button class="sort-button" type="button" data-sort-key="specimen" data-sort-label="Specimen">Specimen <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="line" aria-sort="none"><button class="sort-button" type="button" data-sort-key="line" data-sort-label="Breeding line">Line <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="sex" aria-sort="none"><button class="sort-button" type="button" data-sort-key="sex" data-sort-label="Sex">Sex <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="generation" aria-sort="none"><button class="sort-button" type="button" data-sort-key="generation" data-sort-label="Generation">Gen. <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="level" aria-sort="none"><button class="sort-button" type="button" data-sort-key="level" data-sort-label="Level">Level <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="mutations" aria-sort="none"><button class="sort-button" type="button" data-sort-key="mutations" data-sort-label="Mutation counters">Mut. <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="program" aria-sort="none"><button class="sort-button" type="button" data-sort-key="program" data-sort-label="Program score">Program <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="genes" aria-sort="none"><button class="sort-button" type="button" data-sort-key="genes" data-sort-label="Top genes">Top genes <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="roster-body"></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="herd-empty" hidden>
+            <span class="empty-emblem" aria-hidden="true">DNA</span>
+            <h3>No specimens in the archive</h3>
+            <p>Add your first breeder, or load a small demo family to see the lineage tools in action.</p>
+            <div>
+              <button class="button button-primary" type="button" data-add-dino>Add first dino</button>
+              <button class="button button-quiet" type="button" id="load-demo-button">Load demo family</button>
+            </div>
+          </div>
+
+          <footer class="panel-footer"><span id="roster-count">0 records</span><span>Tip: press <kbd>N</kbd> to add</span></footer>
+        </div>
+
+        <aside class="panel specimen-panel" id="specimen-panel" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section class="view" id="incubators-view" data-view-panel="incubators" aria-labelledby="incubators-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">HATCHERY CONTROL</p>
+          <h2 id="incubators-title">Incubators</h2>
+        </div>
+        <div class="section-heading-actions">
+          <p class="section-note">Each incubator holds ten eggs. Hatch an egg to move it into the Herd register as Growing.</p>
+          <button class="button button-primary" type="button" data-add-incubator><span aria-hidden="true">＋</span> Add incubator</button>
+        </div>
+      </div>
+
+      <div class="incubator-layout">
+        <aside class="panel incubator-list-panel">
+          <div class="incubator-panel-heading">
+            <div><span>YOUR HATCHERY</span><strong id="incubator-total-count">0 incubators</strong></div>
+          </div>
+          <div class="incubator-list" id="incubator-list"></div>
+        </aside>
+
+        <div class="incubator-main">
+          <section class="panel incubator-workspace" id="incubator-workspace">
+            <div class="incubator-empty" id="incubator-empty">
+              <span class="empty-emblem" aria-hidden="true">10</span>
+              <h3>No incubators configured</h3>
+              <p>Add the first in-game incubator, give it a recognizable name, and begin assigning eggs to its ten slots.</p>
+              <button class="button button-primary" type="button" data-add-incubator>Add first incubator</button>
+            </div>
+            <div id="incubator-detail" hidden>
+              <header class="incubator-detail-header">
+                <div><p class="eyebrow">SELECTED INCUBATOR</p><h3 id="incubator-name">Incubator</h3><span id="incubator-occupancy">0 of 10 occupied</span></div>
+                <div class="incubator-detail-actions">
+                  <button class="button button-quiet" type="button" id="rename-incubator">Rename</button>
+                  <button class="button button-quiet danger-text" type="button" id="delete-incubator">Delete incubator</button>
+                </div>
+              </header>
+              <div class="incubator-slots" id="incubator-slots"></div>
+            </div>
+          </section>
+
+          <section class="panel incubator-roster-panel" id="incubator-roster-panel" hidden>
+            <div class="incubator-table-heading">
+              <div><span>EGGS IN SELECTED INCUBATOR</span><strong id="incubator-table-title">Incubator contents</strong></div>
+              <small>Full inherited record · edit, hatch, or delete</small>
+            </div>
+            <div class="table-wrap">
+              <table class="roster-table incubator-roster-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Specimen</th>
+                    <th scope="col">Line</th>
+                    <th scope="col">Sex</th>
+                    <th scope="col">Gen.</th>
+                    <th scope="col">Level</th>
+                    <th scope="col">Mut.</th>
+                    <th scope="col">Program</th>
+                    <th scope="col">Top genes</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="incubator-roster-body"></tbody>
+              </table>
+            </div>
+            <footer class="panel-footer"><span id="incubator-roster-count">0 eggs</span><span>Ten slots per incubator</span></footer>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="lineage-view" data-view-panel="lineage" aria-labelledby="lineage-title" hidden>
+      <div class="section-heading section-heading-inline">
+        <div>
+          <p class="eyebrow">PEDIGREE MAP</p>
+          <h2 id="lineage-title">Lineage</h2>
+        </div>
+        <div class="lineage-controls">
+          <label class="field-compact">Trace stat
+            <select id="trace-stat-select"></select>
+          </label>
+          <label class="field-compact">Ancestry depth
+            <select id="lineage-depth-select">
+              <option value="3" selected>3 generations</option>
+              <option value="5">5 generations</option>
+              <option value="8">8 generations</option>
+              <option value="12">12 generations</option>
+              <option value="all">All tracked</option>
+            </select>
+          </label>
+          <label class="field-compact">Focus specimen
+            <select id="lineage-select"></select>
+          </label>
+        </div>
+      </div>
+      <div class="panel lineage-panel" id="lineage-canvas"></div>
+    </section>
+
+    <section class="view" id="planner-view" data-view-panel="planner" aria-labelledby="planner-title" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">PAIR ANALYSIS</p>
+          <h2 id="planner-title">Breeding lab</h2>
+        </div>
+        <p class="section-note">Compare inherited points, mutation eligibility, and the best possible unmutated offspring.</p>
+      </div>
+
+      <div class="planner-grid">
+        <section class="panel planner-controls">
+          <div class="parent-choice parent-choice-female">
+            <span class="sex-orb" aria-hidden="true">♀</span>
+            <label>Female
+              <select id="planner-mother"></select>
+            </label>
+            <div id="mother-summary" class="parent-summary"></div>
+          </div>
+          <span class="pair-cross" aria-hidden="true">×</span>
+          <div class="parent-choice parent-choice-male">
+            <span class="sex-orb" aria-hidden="true">♂</span>
+            <label>Male
+              <select id="planner-father"></select>
+            </label>
+            <div id="father-summary" class="parent-summary"></div>
+          </div>
+          <div class="compatibility" id="compatibility"></div>
+        </section>
+
+        <section class="panel offspring-report" id="offspring-report"></section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="dino-dialog" class="dino-dialog">
+    <form method="dialog" id="dino-form">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow" id="dialog-kicker">NEW SPECIMEN</p>
+          <h2 id="dialog-title">Add dino</h2>
+        </div>
+        <button class="icon-button" type="button" id="close-dialog" aria-label="Close">×</button>
+      </div>
+
+      <div class="dialog-scroll">
+        <input type="hidden" name="id" id="dino-id">
+        <fieldset class="transfer-code-section">
+          <div class="legend-row">
+            <strong class="fieldset-title">Transfer code</strong>
+            <span>Paste to fill this form · edit any field to regenerate</span>
+          </div>
+          <div class="transfer-code-control">
+            <label for="dino-transfer-code">ARK Bloodlines string
+              <textarea id="dino-transfer-code" rows="3" maxlength="50000" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="transfer-code-status" placeholder="ABL1:… or ABLS1:{…}"></textarea>
+            </label>
+            <button class="button button-quiet" type="button" id="copy-transfer-code">Copy code</button>
+          </div>
+          <p class="transfer-code-status" id="transfer-code-status" role="status" aria-live="polite">The current form will be encoded here.</p>
+        </fieldset>
+        <fieldset>
+          <legend>Identity</legend>
+          <div class="form-grid form-grid-3">
+            <label>Name <input name="name" id="dino-name" maxlength="50" placeholder="Optional · defaults to Unnamed"></label>
+            <label>Species <input name="species" id="dino-species" required list="species-list" maxlength="60" placeholder="e.g. Rex"></label>
+            <label>Sex
+              <select name="sex" id="dino-sex" required><option>Female</option><option>Male</option></select>
+            </label>
+          </div>
+          <datalist id="species-list"></datalist>
+          <div class="form-grid form-grid-3">
+            <label>Status
+              <select name="status" id="dino-status"><option>Breeder</option><option>Growing</option><option>Candidate</option><option>Egg</option><option>Retired</option><option>Culled</option><option>Cryo</option></select>
+            </label>
+            <label>Line <input name="tag" id="dino-tag" maxlength="40" placeholder="Health, stamina, clean breeders…"></label>
+            <label>Hatched / tamed <input name="born" id="dino-born" type="date"></label>
+          </div>
+          <div class="egg-placement-fields" id="egg-placement-fields" hidden>
+            <label>Incubator
+              <select id="dino-incubator"></select>
+            </label>
+            <label>Slot
+              <select id="dino-incubator-slot"></select>
+            </label>
+            <p id="egg-placement-help">Egg records stay in the Incubators workspace until hatched.</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Parents & counters</legend>
+          <div class="form-grid form-grid-2">
+            <label>Mother <select name="motherId" id="dino-mother"><option value="">Unknown / untracked</option></select></label>
+            <label>Father <select name="fatherId" id="dino-father"><option value="">Unknown / untracked</option></select></label>
+          </div>
+          <div class="form-grid form-grid-3">
+            <label>Maternal mutations <input name="mutationsMaternal" id="mutations-maternal" type="number" min="0" max="9999" step="1" value="0"></label>
+            <label>Paternal mutations <input name="mutationsPaternal" id="mutations-paternal" type="number" min="0" max="9999" step="1" value="0"></label>
+            <div class="derived-field"><span>Generation</span><strong id="generation-preview">G0</strong><small>Calculated from parents</small></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <div class="legend-row">
+            <strong class="fieldset-title">Inherited stat points</strong>
+            <div class="legend-actions">
+              <span id="mutation-stack-help">Enter the inherited roll before mutation points · each stack adds +2 to the result</span>
+              <button class="button button-quiet button-compact" type="button" id="prefill-parent-stats">Prefill from parents</button>
+            </div>
+          </div>
+          <div class="stats-entry" id="stats-entry"></div>
+          <p class="parent-prefill-summary" id="parent-prefill-summary">Choose tracked parents to prefill the most likely inherited values.</p>
+          <div class="stat-explainer">
+            <span class="formula-chip">BASE LEVEL = 1 + ALL POINTS</span>
+            <div><small>Calculated base level</small><strong id="level-preview">1</strong></div>
+            <p id="mutation-preview">Choose tracked parents to analyze inheritance.</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <div class="legend-row">
+            <strong class="fieldset-title">Player progression</strong>
+            <span>Optional · never used in breeding calculations</span>
+          </div>
+          <div class="progression-entry" id="progression-entry"></div>
+          <div class="progression-summary">
+            <div><small>Base level</small><strong id="progression-base-preview">1</strong></div>
+            <span aria-hidden="true">＋</span>
+            <div><small>Player levels</small><strong id="player-levels-preview">0</strong></div>
+            <span aria-hidden="true">＝</span>
+            <div class="current-level-total"><small>Current level</small><strong id="current-level-preview">1</strong></div>
+            <p>Calculated values use the species profile, origin, imprint, and server multipliers. Optional observed values let you verify the result.</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <div class="legend-row">
+            <strong class="fieldset-title">Traits, ID & imprint</strong>
+            <span>Optional specimen metadata</span>
+          </div>
+          <div class="form-grid form-grid-3">
+            <label>Dino ID <input name="gameId" id="dino-game-id" maxlength="80" autocomplete="off" placeholder="In-game / cryopod ID"></label>
+            <label>Origin
+              <select name="origin" id="dino-origin"><option value="bred">Bred / hatched</option><option value="tamed">Tamed</option></select>
+            </label>
+            <label>Taming effectiveness <span class="input-with-unit"><input name="tamingEffectiveness" id="dino-taming-effectiveness" type="number" min="0" max="100" step="0.1" value="100" inputmode="decimal"><span>%</span></span></label>
+            <label>Imprint percentage <input name="imprintPercent" id="dino-imprint" type="number" min="0" max="100" step="1" value="0" inputmode="numeric"></label>
+            <label>Imprinted by <input name="imprinter" id="dino-imprinter" maxlength="60" autocomplete="off" placeholder="Survivor name"></label>
+            <div class="derived-field calculator-status"><span>Stat profile</span><strong id="calculator-profile">Waiting</strong><small id="calculator-profile-note">Enter a supported species</small><button type="button" id="define-profile-button">Define profile</button></div>
+          </div>
+          <label class="full-width-field">Traits
+            <input name="traits" id="dino-traits" maxlength="400" placeholder="Mutable Health III, Vampiric II, Kingslayer">
+            <small>Separate traits with commas. Names and tiers are kept exactly as entered.</small>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <div class="legend-row">
+            <strong class="fieldset-title">Color regions</strong>
+            <div class="legend-actions">
+              <span>ARK creature color IDs · regions 0–5</span>
+              <button class="button button-quiet button-compact" type="button" id="prefill-parent-colors">Prefill from parents</button>
+            </div>
+          </div>
+          <div class="color-regions-entry" id="color-regions-entry"></div>
+          <p class="parent-prefill-summary" id="color-prefill-summary">Choose tracked parents to prefill an inherited color sample.</p>
+          <p class="color-region-help">Use the color numbers shown by the Tek Binoculars. “No color / unused” is ID 0; leave a region Unknown when it was not recorded. Verify the predicted colors against the actual baby.</p>
+          <label class="full-width-field">Notes <textarea name="notes" id="dino-notes" rows="2" maxlength="500" placeholder="Cryofridge, pairing notes, cooldown…"></textarea></label>
+        </fieldset>
+      </div>
+
+      <div class="dialog-actions">
+        <button class="button button-quiet" type="button" id="cancel-dialog">Cancel</button>
+        <button class="button button-primary" type="submit" id="save-dino-button">Save specimen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="incubator-dialog" class="dino-dialog compact-dialog">
+    <form method="dialog" id="incubator-form">
+      <div class="dialog-header">
+        <div><p class="eyebrow" id="incubator-dialog-kicker">NEW INCUBATOR</p><h2 id="incubator-dialog-title">Add incubator</h2></div>
+        <button class="icon-button" type="button" id="close-incubator-dialog" aria-label="Close">×</button>
+      </div>
+      <div class="dialog-scroll">
+        <input type="hidden" id="incubator-id">
+        <label>Incubator name
+          <input id="incubator-name-input" required maxlength="50" autocomplete="off" placeholder="e.g. Argy Hatchery A">
+        </label>
+        <p class="settings-intro">Names must be unique. The app creates a permanent internal ID automatically and provides ten numbered egg slots.</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-quiet" type="button" id="cancel-incubator-dialog">Cancel</button>
+        <button class="button button-primary" type="submit">Save incubator</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog" class="dino-dialog settings-dialog">
+    <form method="dialog" id="settings-form">
+      <div class="dialog-header">
+        <div><p class="eyebrow">BREEDING PROGRAM</p><h2>Calculator &amp; quality settings</h2></div>
+        <button class="icon-button" type="button" id="close-settings" aria-label="Close">×</button>
+      </div>
+      <div class="dialog-scroll">
+        <p class="settings-intro">Official-style defaults are already loaded. Change these only when your server overrides its creature stat multipliers.</p>
+        <label class="imprint-setting">Baby imprinting stat scale
+          <input id="setting-imprint-scale" type="number" min="0" step="0.01" value="1" inputmode="decimal">
+        </label>
+        <div class="settings-preset">
+          <label class="checkbox-setting">
+            <input id="setting-single-player" type="checkbox">
+            <span><strong>Apply Single Player Settings stat boosts</strong><small>Applies ARK’s hidden Health and Melee factors on top of the base values shown below.</small></span>
+          </label>
+          <p id="single-player-preset-summary">Unchecked uses the base multiplier values shown in the table.</p>
+        </div>
+        <div class="multiplier-table-wrap">
+          <table class="multiplier-table">
+            <thead><tr><th>Stat</th><th>Wild</th><th>Player levels</th><th>Tame add</th><th>Tame affinity</th></tr></thead>
+            <tbody id="multiplier-settings-body"></tbody>
+          </table>
+        </div>
+        <p class="settings-help">These correspond to <code>PerLevelStatsMultiplier_DinoWild</code>, <code>PerLevelStatsMultiplier_DinoTamed</code>, <code>..._Add</code>, and <code>..._Affinity</code>, matching the values visible in ARK’s Advanced settings. When Single Player Settings is checked, ARK’s hidden Health and Melee factors are applied on top without changing these base values. Breeding point provenance does not depend on them.</p>
+        <section class="quality-goal-editor">
+          <div class="quality-goal-heading">
+            <div><p class="eyebrow">QUALITY SCORE</p><h3>Species breeding goals</h3></div>
+            <label>Species line<select id="quality-species-select"></select></label>
+          </div>
+          <p class="settings-intro">Choose whether each inherited stat should be high, low, or ignored. Grades are relative to the active dinos in that species line; player levels and imprint never inflate genetic quality.</p>
+          <div class="quality-goal-grid" id="quality-goal-grid"></div>
+          <div class="quality-goal-actions">
+            <button class="button button-quiet" type="button" id="reset-quality-goal">Use default goals</button>
+            <button class="button button-secondary" type="button" id="save-quality-goal">Save species goal</button>
+          </div>
+          <p class="settings-help">Default targets: high Health, Stamina, Weight, and Melee; Oxygen, Food, and Speed are ignored. A low target is useful when you deliberately breed waste stats down. Grades use target-gene rank, progress over tracked parents, mutation capacity, and aligned Frail/Robust/Mutable traits.</p>
+        </section>
+      </div>
+      <div class="dialog-actions settings-actions">
+        <button class="button button-quiet" type="button" id="reset-settings">Restore official defaults</button>
+        <button class="button button-quiet" type="button" id="cancel-settings">Cancel</button>
+        <button class="button button-primary" type="submit">Save settings</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="profile-dialog" class="dino-dialog profile-dialog">
+    <form method="dialog" id="profile-form">
+      <div class="dialog-header">
+        <div><p class="eyebrow">CUSTOM CREATURE DATA</p><h2 id="profile-dialog-title">Species stat profile</h2></div>
+        <button class="icon-button" type="button" id="close-profile" aria-label="Close">×</button>
+      </div>
+      <div class="dialog-scroll">
+        <div class="profile-top-grid">
+          <label>Species name <input id="profile-name" required maxlength="60" placeholder="Exact name used on dino records"></label>
+          <label>Tamed base health multiplier <input id="profile-tbhm" type="number" min="0" step="0.001" value="1" required inputmode="decimal"></label>
+        </div>
+        <p class="settings-intro">Percent columns use whole percentages: enter <strong>20</strong> for 20%. “Tame add” is the raw additive value from the creature profile.</p>
+        <div class="multiplier-table-wrap">
+          <table class="multiplier-table profile-stat-table">
+            <thead><tr><th>Stat</th><th>Base</th><th>Wild %</th><th>Player %</th><th>Tame add</th><th>Affinity %</th><th>Imprint %</th></tr></thead>
+            <tbody id="profile-stats-body"></tbody>
+          </table>
+        </div>
+        <section class="saved-profiles"><div><p class="eyebrow">SAVED LOCALLY</p><h3>Custom profiles</h3></div><div id="custom-profile-list"></div></section>
+      </div>
+      <div class="dialog-actions">
+        <button class="button button-quiet" type="button" id="delete-profile" hidden>Delete profile</button>
+        <button class="button button-quiet" type="button" id="cancel-profile">Cancel</button>
+        <button class="button button-primary" type="submit">Save profile</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="color-data.js"></script>
+  <script src="species-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

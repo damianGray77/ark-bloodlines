@@ -1,0 +1,29 @@
+# Local application data exports
+ark-bloodlines-*.json
+
+# Codex/editor-local state
+.agents/
+.codex/
+.vscode/
+.idea/
+.vs/
+
+# Generated image intermediates
+assets/branding/generated/
+
+# Unreal/ARK DevKit generated output (never vendor the DevKit itself)
+Binaries/
+Build/
+Cooked/
+DerivedDataCache/
+Intermediate/
+Saved/
+StagedBuilds/
+ModTools/Output/
+
+# Common local artifacts
+node_modules/
+*.log
+*.tmp
+Thumbs.db
+.DS_Store

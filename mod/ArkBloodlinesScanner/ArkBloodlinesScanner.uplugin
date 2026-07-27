@@ -1,0 +1,20 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "411EE6A64B3040FF7D4E179B66DE45C7",
+	"FriendlyName": "ARK Bloodlines Scanner",
+	"Description": "Adds a creature radial-menu action that exports breeding data as an ABL1 transfer code for the ARK Bloodlines companion app. The scanner is read-only and requires no OCR, filesystem access, network access, or automatic clipboard access.",
+	"Category": "UGC",
+	"CreatedBy": "ARK Bloodlines",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "https://legacy.curseforge.com/ark-survival-ascended/mods/ark-bloodlines-scanner",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"ExplicitlyLoaded": true,
+	"CfUgcId": 1627157,
+	"AutoCookingType": "All"
+}
