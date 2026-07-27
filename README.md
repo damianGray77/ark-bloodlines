@@ -2,9 +2,7 @@
 
 A dependency-free, offline ARK breeding ledger. Open `index.html` directly in a modern browser; no server or installation is required.
 
-The browser identity uses a cracked-egg DNA favicon, with `.ico` and PNG variants for tabs, shortcuts, and Apple touch icons.
-
-This repository also includes the companion **ARK Bloodlines Scanner** ASA mod. The mod adds a creature radial-menu action that exports breeding data directly into the app's `ABL1:` transfer format, avoiding manual stat entry and OCR.
+This repository also includes the companion **ARK Bloodlines Scanner** ASA mod. The mod adds a creature radial-menu action that allows the user to export breeding data directly into the app via copy/pasting a code.
 
 ## Repository layout
 
