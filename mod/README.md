@@ -4,6 +4,17 @@ This folder contains the complete ASA DevKit plugin used by the ARK Bloodlines c
 
 The scanner adds an action to a tamed creature's radial menu. It reads breeding-relevant creature data and displays an `ABL1:` transfer code for manual copying into the browser app. It does not modify the creature or access the filesystem, network, or clipboard automatically.
 
+## Configuration
+
+The raw JSON preview is hidden by default; the portable `ABL1:` transfer code remains visible. To expose the JSON for troubleshooting, add the following server-wide option to `GameUserSettings.ini` and restart the session:
+
+```ini
+[ArkBloodlinesScanner]
+ShowDebugJson=True
+```
+
+Remove the option or set it to `False` to restore the normal compact window. New creatures receive the scanner action immediately. Legacy creatures saved before the mod was installed are repaired automatically when they are near a connected player, normally within ten seconds.
+
 ## Development
 
 The plugin was created with the ARK: Survival Ascended DevKit. To work on it:

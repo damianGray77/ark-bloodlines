@@ -176,6 +176,7 @@ Begin Object Class=/Script/UMG.MultiLineEditableTextBox Name="ExportText" Export
    WidgetStyle=(TextStyle=(ColorAndOpacity=(SpecifiedColor=(R=0.720000,G=0.920000,B=1.000000,A=1.000000)),Font=(FontObject="/Script/Engine.Font'/Game/PrimalEarth/UI/Fonts/OpenSansRegular12.OpenSansRegular12'",TypefaceFontName="Regular",Size=14.000000)),BackgroundImageNormal=(ImageSize=(X=128.000000,Y=128.000000),Margin=(Left=0.100000,Top=0.100000,Right=0.100000,Bottom=0.100000),TintColor=(SpecifiedColor=(R=0.000000,G=0.760000,B=1.000000,A=0.720000)),DrawAs=Box,ResourceObject="/Script/Engine.Texture2D'/Game/PrimalEarth/UI/UI_Final_Assets/selection_brackets.selection_brackets'"),BackgroundImageHovered=(ImageSize=(X=128.000000,Y=128.000000),Margin=(Left=0.100000,Top=0.100000,Right=0.100000,Bottom=0.100000),TintColor=(SpecifiedColor=(R=0.100000,G=0.900000,B=1.000000,A=0.900000)),DrawAs=Box,ResourceObject="/Script/Engine.Texture2D'/Game/PrimalEarth/UI/UI_Final_Assets/selection_brackets.selection_brackets'"),BackgroundImageFocused=(ImageSize=(X=128.000000,Y=128.000000),Margin=(Left=0.100000,Top=0.100000,Right=0.100000,Bottom=0.100000),TintColor=(SpecifiedColor=(R=0.200000,G=0.950000,B=1.000000,A=1.000000)),DrawAs=Box,ResourceObject="/Script/Engine.Texture2D'/Game/PrimalEarth/UI/UI_Final_Assets/selection_brackets.selection_brackets'"),BackgroundImageReadOnly=(ImageSize=(X=128.000000,Y=128.000000),Margin=(Left=0.100000,Top=0.100000,Right=0.100000,Bottom=0.100000),TintColor=(SpecifiedColor=(R=0.000000,G=0.760000,B=1.000000,A=0.720000)),DrawAs=Box,ResourceObject="/Script/Engine.Texture2D'/Game/PrimalEarth/UI/UI_Final_Assets/selection_brackets.selection_brackets'"),Padding=(Left=14.000000,Top=10.000000,Right=14.000000,Bottom=10.000000))
    bIsReadOnly=True
    AutoWrapText=True
+   WrappingPolicy=AllowPerCharacterWrapping
    DisplayLabel="ExportText"
 End Object
 Begin Object Class=/Script/UMG.TextBlock Name="CopyHint" ExportPath="/Script/UMG.TextBlock'/ArkBloodlinesScanner/WBP_ABLExport.WBP_ABLExport:WidgetTree.CopyHint'"
@@ -203,7 +204,7 @@ End Object
 Begin Object Class=/Script/UMG.TextBlock Name="CloseButtonText" ExportPath="/Script/UMG.TextBlock'/ArkBloodlinesScanner/WBP_ABLExport.WBP_ABLExport:WidgetTree.CloseButtonText'"
    Text=NSLOCTEXT("[71A16EA04694DF984059BE5A7542FB14]", "095746C74665854BBA8419A1DB1D2E42", "CLOSE")
    ColorAndOpacity=(SpecifiedColor=(R=0.820000,G=0.970000,B=1.000000,A=1.000000))
-   Font=(FontObject="/Script/Engine.Font'/Game/PrimalEarth/UI/Fonts/GoBoldRegular30.GoBoldRegular30'",TypefaceFontName="Regular",Size=15.000000)
+   Font=(FontObject="/Script/Engine.Font'/Game/PrimalEarth/UI/Fonts/OpenSansRegular12.OpenSansRegular12'",TypefaceFontName="Regular",Size=15.000000)
    ShadowOffset=(X=1.000000,Y=1.000000)
    ShadowColorAndOpacity=(R=0.000000,G=0.200000,B=0.300000,A=0.800000)
    Justification=Center
