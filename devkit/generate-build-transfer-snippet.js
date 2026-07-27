@@ -544,20 +544,80 @@ const ancestorLength = arrayFunction(
 );
 connect(ancestorsBP.result, ancestorLength.target);
 
-// ARK stores both direct parents in element zero of DinoAncestors.
+// ARK appends the current creature's direct-parent pair after the older lineage entries.
+const directParentIndex = intMath(
+  "K2Node_CallFunction_ABLTransfer_DirectParentIndex",
+  "Subtract_IntInt",
+  4900,
+  1225,
+  1
+);
+connect(ancestorLength.result, directParentIndex.a);
+
 const directParentItem = arrayFunction(
   "K2Node_CallArrayFunction_ABLTransfer_DirectParents",
   "Array_Get",
   "struct",
   classes.ancestorBP,
-  4900,
+  5200,
   1000,
   true
 );
 connect(ancestorsBP.result, directParentItem.target);
+connect(directParentIndex.result, directParentItem.index);
 
-const parents = ancestorBreak("K2Node_BreakStruct_ABLTransfer_Parents", 5200, 1000);
+const parents = ancestorBreak("K2Node_BreakStruct_ABLTransfer_Parents", 5500, 1000);
 connect(directParentItem.result, parents.value);
+
+// The paternal lineage is stored independently. Read its final entry for the
+// father's name/ID fields instead of assuming the maternal array mirrors it.
+const maleAncestors = nativeVariableGet(
+  "K2Node_VariableGet_ABLTransfer_AncestorsMale",
+  "ShooterGame.PrimalDinoCharacter",
+  "DinoAncestorsMale",
+  "struct",
+  3900,
+  1700,
+  { ownerClass: classes.dino, container: "Array", subCategoryObject: classes.ancestor }
+);
+connect(dino.output, maleAncestors.self);
+
+const maleAncestorsBP = ancestorConverter("K2Node_CallFunction_ABLTransfer_AncestorsMaleBP", 4250, 1700);
+connect(maleAncestors.value, maleAncestorsBP.input);
+
+const maleAncestorLength = arrayFunction(
+  "K2Node_CallArrayFunction_ABLTransfer_AncestorMaleLength",
+  "Array_Length",
+  "struct",
+  classes.ancestorBP,
+  4600,
+  1700
+);
+connect(maleAncestorsBP.result, maleAncestorLength.target);
+
+const maleDirectParentIndex = intMath(
+  "K2Node_CallFunction_ABLTransfer_MaleDirectParentIndex",
+  "Subtract_IntInt",
+  4900,
+  1925,
+  1
+);
+connect(maleAncestorLength.result, maleDirectParentIndex.a);
+
+const maleDirectParentItem = arrayFunction(
+  "K2Node_CallArrayFunction_ABLTransfer_MaleDirectParents",
+  "Array_Get",
+  "struct",
+  classes.ancestorBP,
+  5200,
+  1700,
+  true
+);
+connect(maleAncestorsBP.result, maleDirectParentItem.target);
+connect(maleDirectParentIndex.result, maleDirectParentItem.index);
+
+const maleParents = ancestorBreak("K2Node_BreakStruct_ABLTransfer_MaleParents", 5500, 1700);
+connect(maleDirectParentItem.result, maleParents.value);
 
 const hasParents = intMath("K2Node_CallFunction_ABLTransfer_HasParents", "Greater_IntInt", 4900, 1325, 0);
 connect(ancestorLength.result, hasParents.a);
@@ -583,9 +643,9 @@ const parentSetters = [
   [jsonSet("K2Node_CallFunction_ABLTransfer_SetMotherName", "SetStringField", "motherName", "string", 6500, -200), parents.fields.FemaleName],
   [jsonSet("K2Node_CallFunction_ABLTransfer_SetMotherID1", "SetIntField", "motherDinoId1", "int", 6800, -200), parents.fields.FemaleDinoID1],
   [jsonSet("K2Node_CallFunction_ABLTransfer_SetMotherID2", "SetIntField", "motherDinoId2", "int", 7100, -200), parents.fields.FemaleDinoID2],
-  [jsonSet("K2Node_CallFunction_ABLTransfer_SetFatherName", "SetStringField", "fatherName", "string", 7400, -200), parents.fields.MaleName],
-  [jsonSet("K2Node_CallFunction_ABLTransfer_SetFatherID1", "SetIntField", "fatherDinoId1", "int", 7700, -200), parents.fields.MaleDinoID1],
-  [jsonSet("K2Node_CallFunction_ABLTransfer_SetFatherID2", "SetIntField", "fatherDinoId2", "int", 8000, -200), parents.fields.MaleDinoID2]
+  [jsonSet("K2Node_CallFunction_ABLTransfer_SetFatherName", "SetStringField", "fatherName", "string", 7400, -200), maleParents.fields.MaleName],
+  [jsonSet("K2Node_CallFunction_ABLTransfer_SetFatherID1", "SetIntField", "fatherDinoId1", "int", 7700, -200), maleParents.fields.MaleDinoID1],
+  [jsonSet("K2Node_CallFunction_ABLTransfer_SetFatherID2", "SetIntField", "fatherDinoId2", "int", 8000, -200), maleParents.fields.MaleDinoID2]
 ];
 connect(parentBranch.then, parentSetters[0][0].execute);
 for (let index = 0; index < parentSetters.length; index += 1) {
@@ -737,3 +797,70 @@ console.log(`Wrote ${outputPath}`);
 console.log(`Nodes: ${nodes.length}; characters: ${output.length}`);
 console.log("Connect entry exec to GetStatus.execute");
 console.log("Connect entry Dino/ForPC/WildPoints/LeveledPoints/MutationStacks to the five left-side reroutes.");
+
+// Standalone diagnostic chain for checking whether the paternal ancestry array
+// preserves both halves of the direct father's creature ID.
+nodes.length = 0;
+nextGuid = 0x5000;
+
+const maleAncestorsDiagnostic = nativeVariableGet(
+  "K2Node_VariableGet_ABLMaleDiagnostic_Ancestors",
+  "ShooterGame.PrimalDinoCharacter",
+  "DinoAncestorsMale",
+  "struct",
+  0,
+  0,
+  { ownerClass: classes.dino, container: "Array", subCategoryObject: classes.ancestor }
+);
+
+const maleAncestorsBPDiagnostic = ancestorConverter(
+  "K2Node_CallFunction_ABLMaleDiagnostic_AncestorsBP",
+  320,
+  0
+);
+connect(maleAncestorsDiagnostic.value, maleAncestorsBPDiagnostic.input);
+
+const maleAncestorLengthDiagnostic = arrayFunction(
+  "K2Node_CallArrayFunction_ABLMaleDiagnostic_Length",
+  "Array_Length",
+  "struct",
+  classes.ancestorBP,
+  640,
+  0
+);
+connect(maleAncestorsBPDiagnostic.result, maleAncestorLengthDiagnostic.target);
+
+const maleDirectParentIndexDiagnostic = intMath(
+  "K2Node_CallFunction_ABLMaleDiagnostic_LastIndex",
+  "Subtract_IntInt",
+  640,
+  240,
+  1
+);
+connect(maleAncestorLengthDiagnostic.result, maleDirectParentIndexDiagnostic.a);
+
+const maleDirectParentsDiagnostic = arrayFunction(
+  "K2Node_CallArrayFunction_ABLMaleDiagnostic_DirectParents",
+  "Array_Get",
+  "struct",
+  classes.ancestorBP,
+  960,
+  0,
+  true
+);
+connect(maleAncestorsBPDiagnostic.result, maleDirectParentsDiagnostic.target);
+connect(maleDirectParentIndexDiagnostic.result, maleDirectParentsDiagnostic.index);
+
+const maleParentsDiagnostic = ancestorBreak(
+  "K2Node_BreakStruct_ABLMaleDiagnostic_Parents",
+  1280,
+  0
+);
+connect(maleDirectParentsDiagnostic.result, maleParentsDiagnostic.value);
+
+const diagnosticOutput = `${nodes.map(renderNode).join("\n")}\n`;
+const diagnosticOutputPath = path.join(__dirname, "DinoAncestorsMale-diagnostic-paste.txt");
+fs.writeFileSync(diagnosticOutputPath, diagnosticOutput, "utf8");
+console.log(`Wrote ${diagnosticOutputPath}`);
+console.log(`Diagnostic nodes: ${nodes.length}; characters: ${diagnosticOutput.length}`);
+console.log("Wire Dino to the leftmost self/Target pin, then wire Male Name and both Male Dino ID outputs to the existing father setters.");

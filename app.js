@@ -31,6 +31,7 @@
     "Thylacoleo", "Triceratops", "Tusoteuthis", "Velonasaur", "Fire Wyvern", "Lightning Wyvern", "Poison Wyvern", "Ice Wyvern", "Yutyrannus"
   ];
   const SPECIES_ALIASES = { daedon: "daeodon", spinosaurus: "spino", therizinosaurus: "therizinosaur" };
+  const TRANSFER_SPECIES_ALIASES = { argent: "Argentavis" };
   const OFFICIAL_SETTINGS = {
     imprintScale: 1,
     multipliers: {
@@ -1432,7 +1433,8 @@
   function transferredSpeciesName(value) {
     const species = String(value ?? "").trim();
     const descriptiveName = species.match(/\s*-\s*Lvl\s+\d+\s*\(([^()]*)\)\s*$/i);
-    return descriptiveName?.[1]?.trim() || species;
+    const cleaned = descriptiveName?.[1]?.trim() || species;
+    return TRANSFER_SPECIES_ALIASES[normalizeSpeciesName(cleaned)] || cleaned;
   }
 
   function transferredDinoIdPart(value) {
@@ -1453,27 +1455,67 @@
     if (first == null && second == null) return "";
     const parts = [transferredDinoIdPart(first), transferredDinoIdPart(second)];
     if (parts.every(part => !part || part === "0")) return "";
-    return parts.join("-");
+    return parts.every(part => !part || /^\d+$/.test(part))
+      ? parts.join("")
+      : parts.filter(Boolean).join("-");
+  }
+
+  function transferredParentName(value) {
+    return String(value ?? "")
+      .trim()
+      .replace(/\s*-\s*Lvl\s+\d+(?:\s*\([^()]*\))?\s*$/i, "")
+      .trim();
+  }
+
+  function comparableGameId(value) {
+    return String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "");
+  }
+
+  function transferredParentIdentity(details) {
+    const direct = String(details.gameId ?? details.dinoId ?? details.id ?? "").trim();
+    if (direct) return { exact: comparableGameId(direct), parts: [] };
+    const first = transferredDinoIdPart(details.dinoId1 ?? details.DinoID1);
+    const second = transferredDinoIdPart(details.dinoId2 ?? details.DinoID2);
+    const parts = [...new Set(
+      [first, second]
+        .filter(part => part && part !== "0")
+        .map(comparableGameId)
+        .filter(Boolean)
+    )];
+    return {
+      exact: parts.length === 2 ? comparableGameId(transferredGameId("", details)) : "",
+      parts
+    };
   }
 
   function resolveTransferParent(reference, sex, species) {
     if (!reference) return "";
     const details = typeof reference === "string" ? { gameId: reference, name: reference } : reference;
-    const gameId = transferredGameId(details.gameId ?? details.dinoId ?? details.id, details).toLowerCase();
-    if (gameId) {
-      const byGameId = state.dinos.find(dino => dino.id !== $("#dino-id").value && dino.sex === sex && dino.gameId.trim().toLowerCase() === gameId);
+    const identity = transferredParentIdentity(details);
+    if (identity.exact) {
+      const byGameId = state.dinos.find(dino =>
+        dino.id !== $("#dino-id").value
+        && dino.sex === sex
+        && comparableGameId(dino.gameId) === identity.exact
+      );
       if (byGameId) return byGameId.id;
     }
-    const name = String(details.name ?? "").trim().toLowerCase();
+    const name = transferredParentName(details.name).toLowerCase();
     if (!name) return "";
-    const referenceSpecies = String(details.species || species || "");
+    const referenceSpecies = transferredSpeciesName(details.species || species || "");
     const matches = state.dinos.filter(dino =>
       dino.id !== $("#dino-id").value
       && dino.sex === sex
       && (!referenceSpecies || normalizeSpeciesName(dino.species) === normalizeSpeciesName(referenceSpecies))
-      && [dino.name, displayDinoName(dino)].some(value => value.trim().toLowerCase() === name)
+      && [dino.name, displayDinoName(dino)].some(value => transferredParentName(value).toLowerCase() === name)
     );
-    return matches.length === 1 ? matches[0].id : "";
+    const corroboratedMatches = identity.parts.length
+      ? matches.filter(dino => {
+          const gameId = comparableGameId(dino.gameId);
+          return identity.parts.every(part => gameId.startsWith(part) || gameId.endsWith(part));
+        })
+      : matches;
+    return corroboratedMatches.length === 1 ? corroboratedMatches[0].id : "";
   }
 
   function applyTransferCode(rawCode) {
