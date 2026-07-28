@@ -1,16 +1,15 @@
 # ARK Bloodlines
 
-A dependency-free, offline ARK breeding ledger. Open `index.html` directly in a modern browser; no server or installation is required.
+A dependency-free, offline ARK breeding ledger. Open [`app/index.html`](app/index.html) directly in a modern browser; no server or installation is required.
 
 This repository also includes the companion **ARK Bloodlines Scanner** ASA mod. The mod adds a creature radial-menu action that allows the user to export breeding data directly into the app via copy/pasting a code.
 
 ## Repository layout
 
-- `index.html`, `app.js`, and `styles.css` — the dependency-free browser application
-- `species-data.js` and `color-data.js` — bundled offline ARK data
-- `mod/ArkBloodlinesScanner/` — the complete ASA DevKit plugin
-- `devkit/` — Blueprint clipboard exports, generators, validation helpers, and release documentation
-- `assets/branding/` — application and mod branding sources
+- [`app/`](app/) — the complete dependency-free browser application, bundled ARK data, and application branding
+- [`mod/ArkBloodlinesScanner/`](mod/ArkBloodlinesScanner/) — the complete ASA DevKit plugin
+- [`mod/devkit/`](mod/devkit/) — Blueprint clipboard exports, generators, validation helpers, and release documentation
+- [`mod/assets/branding/`](mod/assets/branding/) — source artwork used by the scanner mod
 
 For DevKit setup, cloud cooking, and unpublished-build testing, see [`mod/README.md`](mod/README.md).
 

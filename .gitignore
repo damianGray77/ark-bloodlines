@@ -9,7 +9,7 @@ ark-bloodlines-*.json
 .vs/
 
 # Generated image intermediates
-assets/branding/generated/
+**/assets/branding/generated/
 
 # Unreal/ARK DevKit generated output (never vendor the DevKit itself)
 Binaries/

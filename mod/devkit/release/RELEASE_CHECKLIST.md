@@ -2,7 +2,7 @@
 
 ## Content cleanup
 
-- Import `assets/branding/HUD_ArkBloodlinesScanner_Icon.png` into the mod root as `HUD_ArkBloodlinesScanner_Icon`.
+- Import [`mod/assets/branding/HUD_ArkBloodlinesScanner_Icon.png`](../../assets/branding/HUD_ArkBloodlinesScanner_Icon.png) into the mod root as `HUD_ArkBloodlinesScanner_Icon`.
 - In the imported texture, set **Texture Group** to `World` and **Mip Gen Settings** to `Sharpen 4`.
 - In `Buff_ArkBloodlineScanner > BPGetMultiUseEntries`, assign that texture to the `Icon` pin of the scanner's `Make Multi Use Entry`.
 - Keep **Use Old Multi Use Option With Text** disabled. The existing use string can remain as the hover/accessibility label.

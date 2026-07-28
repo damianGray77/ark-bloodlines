@@ -29,7 +29,7 @@ The plugin was created with the ARK: Survival Ascended DevKit. To work on it:
 3. Enable `ArkBloodlinesScanner` from the DevKit's **UGC** menu.
 4. Open the assets from the plugin's **Content** folder.
 
-The `.uasset` and `.umap` files are Unreal binary assets. The repository's [`devkit`](../devkit/) directory also contains Blueprint clipboard exports, generators, presentation assets, and the release checklist used while building the plugin.
+The `.uasset` and `.umap` files are Unreal binary assets. This folder's [`devkit`](devkit/) directory also contains Blueprint clipboard exports, generators, presentation assets, and the release checklist used while building the plugin.
 
 ## Cooking and testing
 
