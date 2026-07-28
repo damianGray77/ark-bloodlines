@@ -540,6 +540,11 @@ button.pedigree-node:hover { border-color: var(--line-bright); background: var(-
 .form-grid-2 { grid-template-columns: repeat(2, 1fr); }
 .dino-dialog label, .derived-field > span { display: block; color: var(--muted); font: 650 .6rem var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 .dino-dialog label input, .dino-dialog label select, .dino-dialog label textarea { margin-top: .38rem; color: var(--text); font: 500 .77rem var(--sans); letter-spacing: 0; text-transform: none; }
+.parent-form-field { min-width: 0; }
+.parent-field-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.dino-dialog .parent-form-field > select { margin-top: .38rem; color: var(--text); font: 500 .77rem var(--sans); letter-spacing: 0; text-transform: none; }
+.dino-dialog .parent-filter-toggle { display: inline-flex; align-items: center; gap: .35rem; color: var(--muted-2); font: 600 .55rem var(--sans); letter-spacing: 0; text-transform: none; white-space: nowrap; cursor: pointer; }
+.dino-dialog .parent-filter-toggle input { width: .85rem; height: .85rem; margin: 0; padding: 0; accent-color: var(--acid); box-shadow: none; cursor: pointer; }
 .dino-dialog .full-width-field { margin-top: .7rem; }
 .dino-dialog .full-width-field small { display: block; margin-top: .32rem; color: var(--muted-2); font: 500 .58rem var(--sans); letter-spacing: 0; line-height: 1.4; text-transform: none; }
 .transfer-code-section { padding-top: .85rem !important; }

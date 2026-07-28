@@ -1518,6 +1518,15 @@
     return corroboratedMatches.length === 1 ? corroboratedMatches[0].id : "";
   }
 
+  function transferParentHasData(reference) {
+    if (typeof reference === "string") return Boolean(reference.trim());
+    if (!reference || typeof reference !== "object") return false;
+    return ["gameId", "dinoId", "dinoId1", "dinoId2", "name"].some(key => {
+      const value = reference[key];
+      return value != null && String(value).trim() && String(value).trim() !== "0";
+    });
+  }
+
   function applyTransferCode(rawCode) {
     const creature = decodeTransferCode(rawCode);
     const has = (object, key) => object && Object.prototype.hasOwnProperty.call(object, key);
@@ -1605,23 +1614,29 @@
         });
       }
 
-      populateParentSelects($("#dino-id").value, $("#dino-species").value.trim());
       const parents = creature.parents && typeof creature.parents === "object" ? creature.parents : null;
-      if (has(parents, "mother") || has(creature, "motherGameId") || has(creature, "motherDinoId1") || has(creature, "motherName")) {
-        $("#dino-mother").value = resolveTransferParent(parents?.mother ?? {
-          gameId: creature.motherGameId,
-          dinoId1: creature.motherDinoId1,
-          dinoId2: creature.motherDinoId2,
-          name: creature.motherName
-        }, "Female", $("#dino-species").value);
+      const motherSpecified = has(parents, "mother") || has(creature, "motherGameId") || has(creature, "motherDinoId1") || has(creature, "motherName");
+      const fatherSpecified = has(parents, "father") || has(creature, "fatherGameId") || has(creature, "fatherDinoId1") || has(creature, "fatherName");
+      const motherReference = parents?.mother ?? {
+        gameId: creature.motherGameId,
+        dinoId1: creature.motherDinoId1,
+        dinoId2: creature.motherDinoId2,
+        name: creature.motherName
+      };
+      const fatherReference = parents?.father ?? {
+        gameId: creature.fatherGameId,
+        dinoId1: creature.fatherDinoId1,
+        dinoId2: creature.fatherDinoId2,
+        name: creature.fatherName
+      };
+      if (motherSpecified) $("#dino-mother-breeders-only").checked = !transferParentHasData(motherReference);
+      if (fatherSpecified) $("#dino-father-breeders-only").checked = !transferParentHasData(fatherReference);
+      populateParentSelects($("#dino-id").value, $("#dino-species").value.trim());
+      if (motherSpecified) {
+        $("#dino-mother").value = resolveTransferParent(motherReference, "Female", $("#dino-species").value);
       }
-      if (has(parents, "father") || has(creature, "fatherGameId") || has(creature, "fatherDinoId1") || has(creature, "fatherName")) {
-        $("#dino-father").value = resolveTransferParent(parents?.father ?? {
-          gameId: creature.fatherGameId,
-          dinoId1: creature.fatherDinoId1,
-          dinoId2: creature.fatherDinoId2,
-          name: creature.fatherName
-        }, "Male", $("#dino-species").value);
+      if (fatherSpecified) {
+        $("#dino-father").value = resolveTransferParent(fatherReference, "Male", $("#dino-species").value);
       }
 
       const placement = creature.placement && typeof creature.placement === "object" ? creature.placement : {};
@@ -1872,13 +1887,20 @@
     const currentMother = $("#dino-mother").value;
     const currentFather = $("#dino-father").value;
     const candidates = state.dinos.filter(dino => !isEggDino(dino) && dino.id !== editingId && (!species || dino.species.toLowerCase() === species.toLowerCase()));
-    const fill = (select, sex, current) => {
-      const matches = candidates.filter(dino => dino.sex === sex).sort((a, b) => displayDinoName(a).localeCompare(displayDinoName(b)));
+    const fill = (select, sex, current, breedersOnly) => {
+      const matches = candidates
+        .filter(dino => dino.sex === sex && (!breedersOnly || dino.status === "Breeder"))
+        .sort((a, b) => displayDinoName(a).localeCompare(displayDinoName(b)));
       select.innerHTML = `<option value="">Unknown / untracked</option>${matches.map(dino => `<option value="${esc(dino.id)}">${esc(displayDinoName(dino))} · Base ${baseLevel(dino)}</option>`).join("")}`;
       if (matches.some(dino => dino.id === current)) select.value = current;
     };
-    fill($("#dino-mother"), "Female", currentMother);
-    fill($("#dino-father"), "Male", currentFather);
+    fill($("#dino-mother"), "Female", currentMother, $("#dino-mother-breeders-only").checked);
+    fill($("#dino-father"), "Male", currentFather, $("#dino-father-breeders-only").checked);
+  }
+
+  function handleParentFilterChange() {
+    populateParentSelects($("#dino-id").value, $("#dino-species").value.trim());
+    handleDinoParentChange();
   }
 
   function syncEggPlacementFields(preferredIncubatorId = "", preferredSlot = 0) {
@@ -1933,6 +1955,8 @@
     if (!dino && placement) {
       $("#dino-status").value = "Egg";
     }
+    $("#dino-mother-breeders-only").checked = !dino?.motherId;
+    $("#dino-father-breeders-only").checked = !dino?.fatherId;
     if (dino) {
       $("#dino-name").value = dino.name;
       $("#dino-species").value = dino.species;
@@ -2405,6 +2429,8 @@
     $("#progression-entry").addEventListener("input", updateFormPreview);
     $("#dino-mother").addEventListener("change", handleDinoParentChange);
     $("#dino-father").addEventListener("change", handleDinoParentChange);
+    $("#dino-mother-breeders-only").addEventListener("change", handleParentFilterChange);
+    $("#dino-father-breeders-only").addEventListener("change", handleParentFilterChange);
     $("#prefill-parent-stats").addEventListener("click", () => prefillInheritedStatsFromParents(true));
     $("#prefill-parent-colors").addEventListener("click", () => prefillColorRegionsFromParents(true));
     $("#color-regions-entry").addEventListener("change", handleColorRegionChange);

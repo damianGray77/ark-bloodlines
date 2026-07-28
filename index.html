@@ -347,8 +347,26 @@
         <fieldset>
           <legend>Parents & counters</legend>
           <div class="form-grid form-grid-2">
-            <label>Mother <select name="motherId" id="dino-mother"><option value="">Unknown / untracked</option></select></label>
-            <label>Father <select name="fatherId" id="dino-father"><option value="">Unknown / untracked</option></select></label>
+            <div class="parent-form-field">
+              <div class="parent-field-heading">
+                <label for="dino-mother">Mother</label>
+                <label class="parent-filter-toggle" title="Show only females with Breeder status">
+                  <input type="checkbox" id="dino-mother-breeders-only">
+                  <span>Breeders only</span>
+                </label>
+              </div>
+              <select name="motherId" id="dino-mother"><option value="">Unknown / untracked</option></select>
+            </div>
+            <div class="parent-form-field">
+              <div class="parent-field-heading">
+                <label for="dino-father">Father</label>
+                <label class="parent-filter-toggle" title="Show only males with Breeder status">
+                  <input type="checkbox" id="dino-father-breeders-only">
+                  <span>Breeders only</span>
+                </label>
+              </div>
+              <select name="fatherId" id="dino-father"><option value="">Unknown / untracked</option></select>
+            </div>
           </div>
           <div class="form-grid form-grid-3">
             <label>Maternal mutations <input name="mutationsMaternal" id="mutations-maternal" type="number" min="0" max="9999" step="1" value="0"></label>
