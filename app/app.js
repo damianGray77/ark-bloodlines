@@ -7,6 +7,7 @@
   const TRANSFER_CODE_PREFIX = "ABL1:";
   const SCANNER_TRANSFER_CODE_PREFIX = "ABLS1:";
   const TRANSFER_CODE_FORMAT = "ark-bloodlines";
+  const SCANNER_TRANSFER_CODE_FORMAT = "ark-bloodlines-scan";
   const TRANSFER_CODE_VERSION = 1;
   const TRANSFER_CODE_MAX_LENGTH = 50000;
   const INCUBATOR_CAPACITY = 10;
@@ -1393,11 +1394,11 @@
     }
     const format = payload?.format;
     const version = Number(payload?.version);
-    if (![TRANSFER_CODE_FORMAT, "ark-bloodlines-scan"].includes(format)) throw new Error("This is not an ARK Bloodlines transfer code.");
+    if (![TRANSFER_CODE_FORMAT, SCANNER_TRANSFER_CODE_FORMAT].includes(format)) throw new Error("This is not an ARK Bloodlines transfer code.");
     if (version !== TRANSFER_CODE_VERSION) throw new Error(`Transfer-code version ${version || "unknown"} is not supported.`);
     const creature = payload?.creature;
     if (!creature || typeof creature !== "object" || Array.isArray(creature)) throw new Error("No creature record was found in this transfer code.");
-    return creature;
+    return { creature, format };
   }
 
   function setTransferCodeStatus(message, kind = "") {
@@ -1528,7 +1529,8 @@
   }
 
   function applyTransferCode(rawCode) {
-    const creature = decodeTransferCode(rawCode);
+    const { creature, format } = decodeTransferCode(rawCode);
+    const isScannerTransfer = format === SCANNER_TRANSFER_CODE_FORMAT;
     const has = (object, key) => object && Object.prototype.hasOwnProperty.call(object, key);
     const setValue = (selector, value) => {
       const field = $(selector);
@@ -1569,7 +1571,10 @@
 
       const stackSeries = transferSeries(creature.mutationStacks);
       Object.entries(stackSeries).forEach(([statKey, value]) => {
-        $(`[data-mutation-stack="${statKey}"]`).value = toInt(value);
+        const suppliedValue = toInt(value);
+        // ASA supplies the raw +2 mutation bonus; app transfer codes store mutation-stack counts.
+        const stackCount = isScannerTransfer ? Math.floor(suppliedValue / 2) : suppliedValue;
+        $(`[data-mutation-stack="${statKey}"]`).value = stackCount;
         dinoFormPrefill.manualStats.add(statKey);
       });
       const baseSeries = transferSeries(creature.stats);
