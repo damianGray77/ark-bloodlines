@@ -92,13 +92,23 @@
             <label class="search-box">
               <span aria-hidden="true">⌕</span>
               <span class="sr-only">Search dinos</span>
-              <input id="search-input" type="search" placeholder="Search name, species, line…" autocomplete="off">
+              <input id="search-input" type="search" placeholder="Search name, species, line, tags…" autocomplete="off">
               <kbd>/</kbd>
             </label>
             <label>
               <span class="sr-only">Filter by species</span>
               <select id="species-filter"><option value="all">All species</option></select>
             </label>
+            <details class="tag-filter" id="tag-filter">
+              <summary id="tag-filter-summary"><span id="tag-filter-label">Any tags</span><span aria-hidden="true">▾</span></summary>
+              <div class="tag-filter-menu">
+                <div class="tag-filter-heading">
+                  <div><strong>Filter by tags</strong><small>Matches every selected tag</small></div>
+                  <button type="button" id="clear-tag-filter" disabled>Clear</button>
+                </div>
+                <div class="tag-filter-options" id="tag-filter-options"><span class="tag-filter-empty">No tags yet</span></div>
+              </div>
+            </details>
             <label>
               <span class="sr-only">Filter by sex</span>
               <select id="sex-filter">
@@ -131,6 +141,7 @@
                 <tr>
                   <th scope="col" class="sortable-column" data-sort-column="specimen" aria-sort="none"><button class="sort-button" type="button" data-sort-key="specimen" data-sort-label="Specimen">Specimen <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
                   <th scope="col" class="sortable-column" data-sort-column="line" aria-sort="none"><button class="sort-button" type="button" data-sort-key="line" data-sort-label="Breeding line">Line <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
+                  <th scope="col" class="sortable-column" data-sort-column="tags" aria-sort="none"><button class="sort-button" type="button" data-sort-key="tags" data-sort-label="Tags">Tags <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
                   <th scope="col" class="sortable-column" data-sort-column="sex" aria-sort="none"><button class="sort-button" type="button" data-sort-key="sex" data-sort-label="Sex">Sex <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
                   <th scope="col" class="sortable-column" data-sort-column="generation" aria-sort="none"><button class="sort-button" type="button" data-sort-key="generation" data-sort-label="Generation">Gen. <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
                   <th scope="col" class="sortable-column" data-sort-column="level" aria-sort="none"><button class="sort-button" type="button" data-sort-key="level" data-sort-label="Level">Level <span class="sort-indicator" aria-hidden="true">↕</span></button></th>
@@ -212,6 +223,7 @@
                   <tr>
                     <th scope="col">Specimen</th>
                     <th scope="col">Line</th>
+                    <th scope="col">Tags</th>
                     <th scope="col">Sex</th>
                     <th scope="col">Gen.</th>
                     <th scope="col">Level</th>
@@ -332,6 +344,15 @@
             </label>
             <label>Line <input name="tag" id="dino-tag" maxlength="40" placeholder="Health, stamina, clean breeders…"></label>
             <label>Hatched / tamed <input name="born" id="dino-born" type="date"></label>
+          </div>
+          <div class="full-width-field tag-form-field">
+            <label for="dino-tag-draft">Tags</label>
+            <div class="tag-input-control" id="dino-tag-control">
+              <div class="tag-input-list" id="dino-tag-list"></div>
+              <input id="dino-tag-draft" maxlength="80" autocomplete="off" placeholder="Type a tag, then add a comma" aria-describedby="dino-tags-help">
+              <input type="hidden" name="tags" id="dino-tags">
+            </div>
+            <small id="dino-tags-help">Add a comma or press Enter to turn text into a tag. Select a tag badge to remove it.</small>
           </div>
           <div class="egg-placement-fields" id="egg-placement-fields" hidden>
             <label>Incubator

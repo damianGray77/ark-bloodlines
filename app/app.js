@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "ark-bloodlines-ledger-v1";
   const UI_STORAGE_KEY = "ark-bloodlines-ui-v1";
-  const DATA_VERSION = 3;
+  const DATA_VERSION = 4;
   const TRANSFER_CODE_PREFIX = "ABL1:";
   const SCANNER_TRANSFER_CODE_PREFIX = "ABLS1:";
   const TRANSFER_CODE_FORMAT = "ark-bloodlines";
@@ -98,6 +98,21 @@
   const normalizeSpeciesName = name => String(name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const displayLineName = dino => String(dino?.tag || "").trim();
   const normalizeLineName = value => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const normalizeTagKey = value => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+  function parseTags(value) {
+    const values = Array.isArray(value) ? value : String(value || "").split(",");
+    const seen = new Set();
+    return values.map(item => String(item).trim()).filter(item => {
+      const key = normalizeTagKey(item);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  const serializeTags = value => parseTags(value).join(", ");
+  const dinoTags = dino => parseTags(dino?.tags);
 
   let state = loadState();
   let uiPreferences = loadUiPreferences();
@@ -105,6 +120,8 @@
   let selectedIncubatorId = state.incubators[0]?.id || "";
   let activeView = "herd";
   let rosterSort = { key: "", direction: "" };
+  let selectedTagFilters = new Set();
+  let availableTagLabels = new Map();
   let toastTimer;
   let dinoFormPrefill = { editing: false, manualStats: new Set(), manualColors: new Set(), colorSuggestions: new Map(), suggestions: {} };
   let transferCodeSyncing = false;
@@ -325,6 +342,7 @@
       incubatorId: status === "Egg" ? String(raw.incubatorId || "") : "",
       incubatorSlot: status === "Egg" ? Math.min(INCUBATOR_CAPACITY, toInt(raw.incubatorSlot)) : 0,
       tag: String(raw.tag || ""),
+      tags: serializeTags(raw.tags),
       gameId: String(raw.gameId || ""),
       origin: raw.origin === "tamed" ? "tamed" : "bred",
       tamingEffectiveness: Math.min(100, Math.max(0, Number(raw.tamingEffectiveness ?? 100) || 0)),
@@ -646,6 +664,7 @@
     renderSpeciesDatalist();
     renderMetrics();
     populateSpeciesFilter();
+    populateTagFilter();
     renderRoster();
     renderInspector();
     renderIncubators();
@@ -676,6 +695,34 @@
     filter.value = species.includes(current) ? current : "all";
   }
 
+  function updateTagFilterSummary() {
+    const label = $("#tag-filter-label");
+    const summary = $("#tag-filter-summary");
+    const clear = $("#clear-tag-filter");
+    if (!selectedTagFilters.size) label.textContent = "Any tags";
+    else if (selectedTagFilters.size === 1) label.textContent = availableTagLabels.get([...selectedTagFilters][0]) || "1 tag";
+    else label.textContent = `${selectedTagFilters.size} tags`;
+    summary.classList.toggle("has-selection", selectedTagFilters.size > 0);
+    clear.disabled = selectedTagFilters.size === 0;
+  }
+
+  function populateTagFilter() {
+    const counts = new Map();
+    const labels = new Map();
+    state.dinos.filter(dino => !isEggDino(dino)).forEach(dino => dinoTags(dino).forEach(tag => {
+      const key = normalizeTagKey(tag);
+      if (!labels.has(key)) labels.set(key, tag);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }));
+    availableTagLabels = labels;
+    selectedTagFilters = new Set([...selectedTagFilters].filter(key => labels.has(key)));
+    const options = [...labels.entries()].sort((left, right) => left[1].localeCompare(right[1], undefined, { sensitivity: "base", numeric: true }));
+    $("#tag-filter-options").innerHTML = options.length
+      ? options.map(([key, label]) => `<label><input type="checkbox" value="${esc(key)}" data-tag-filter ${selectedTagFilters.has(key) ? "checked" : ""}><span>${esc(label)}</span><small>${counts.get(key)}</small></label>`).join("")
+      : `<span class="tag-filter-empty">No tags yet</span>`;
+    updateTagFilterSummary();
+  }
+
   function filteredDinos() {
     const query = $("#search-input").value.trim().toLowerCase();
     const species = $("#species-filter").value;
@@ -685,10 +732,15 @@
     const dinos = [...state.dinos]
       .filter(dino => !isEggDino(dino))
       .filter(dino => includeArchived || !isArchivedDino(dino))
-      .filter(dino => !query || [displayDinoName(dino), dino.species, dino.tag, dino.status, dino.gameId, dino.imprinter, dino.traits.join(" ")].some(value => value.toLowerCase().includes(query)))
+      .filter(dino => !query || [displayDinoName(dino), dino.species, dino.tag, dino.tags, dino.status, dino.gameId, dino.imprinter, dino.traits.join(" ")].some(value => value.toLowerCase().includes(query)))
       .filter(dino => species === "all" || dino.species === species)
       .filter(dino => sex === "all" || dino.sex === sex)
-      .filter(dino => status === "all" || dino.status === status);
+      .filter(dino => status === "all" || dino.status === status)
+      .filter(dino => {
+        if (!selectedTagFilters.size) return true;
+        const tags = new Set(dinoTags(dino).map(normalizeTagKey));
+        return [...selectedTagFilters].every(tag => tags.has(tag));
+      });
     return dinos.sort(compareRosterDinos);
   }
 
@@ -723,6 +775,7 @@
     let comparison = 0;
     if (rosterSort.key === "specimen") comparison = displayDinoName(a).localeCompare(displayDinoName(b), undefined, { sensitivity: "base", numeric: true });
     else if (rosterSort.key === "line") comparison = normalizeLineName(a.tag).localeCompare(normalizeLineName(b.tag), undefined, { sensitivity: "base", numeric: true });
+    else if (rosterSort.key === "tags") comparison = serializeTags(a.tags).localeCompare(serializeTags(b.tags), undefined, { sensitivity: "base", numeric: true });
     else if (rosterSort.key === "sex") comparison = a.sex.localeCompare(b.sex);
     else if (rosterSort.key === "generation") comparison = generationOf(a) - generationOf(b);
     else if (rosterSort.key === "level") comparison = currentLevel(a) - currentLevel(b);
@@ -759,9 +812,11 @@
     const slotLabel = isEggDino(dino) ? ` · Slot ${dino.incubatorSlot}` : "";
     const displayName = displayDinoName(dino);
     const lineName = displayLineName(dino);
+    const tags = dinoTags(dino);
     return `<tr class="roster-row ${inHerd && dino.id === selectedId ? "is-selected" : ""}" ${inHerd ? `data-select-id="${esc(dino.id)}" tabindex="0"` : ""}>
       <td><div class="specimen-cell"><span class="specimen-avatar">${esc(initials(displayName))}</span><div><strong>${esc(displayName)}</strong><small title="${dino.gameId ? `Dino ID: ${esc(dino.gameId)}` : ""}">${esc(dino.species)}${slotLabel}${dino.gameId ? ` · ID ${esc(dino.gameId)}` : ""}</small></div></div></td>
       <td class="line-cell ${lineName ? "" : "is-unassigned"}"><span title="${esc(lineName || "Unassigned line")}">${esc(lineName || "Unassigned")}</span></td>
+      <td class="tags-cell ${tags.length ? "" : "is-unassigned"}">${tags.length ? `<div class="row-tag-list">${tags.map(tag => `<span class="tag-badge">${esc(tag)}</span>`).join("")}</div>` : `<span>None</span>`}</td>
       <td><span class="sex-badge ${dino.sex.toLowerCase()}">${dino.sex === "Female" ? "♀" : "♂"} ${esc(dino.sex)}</span></td>
       <td class="generation-cell">G${generationOf(dino)}</td>
       <td class="level-cell"><strong>${currentLevel(dino)}</strong><small>base ${baseLevel(dino)}${playerLevelSum(dino) ? ` · +${playerLevelSum(dino)}` : ""}</small></td>
@@ -776,7 +831,7 @@
     const dinos = filteredDinos();
     const body = $("#roster-body");
     const herdRecords = state.dinos.filter(dino => !isEggDino(dino));
-    body.innerHTML = dinos.map(dino => rosterRowMarkup(dino)).join("") || (herdRecords.length ? `<tr><td colspan="9"><div class="empty-state"><h3>No matching specimens</h3><p>Try a broader search or clear one of the filters.</p></div></td></tr>` : "");
+    body.innerHTML = dinos.map(dino => rosterRowMarkup(dino)).join("") || (herdRecords.length ? `<tr><td colspan="10"><div class="empty-state"><h3>No matching specimens</h3><p>Try a broader search or clear one of the filters.</p></div></td></tr>` : "");
 
     $("#herd-view .table-wrap").hidden = herdRecords.length === 0;
     $("#herd-empty").hidden = herdRecords.length !== 0;
@@ -832,7 +887,7 @@
     }).join("");
     $("#incubator-roster-body").innerHTML = eggs.length
       ? eggs.map(egg => rosterRowMarkup(egg, "incubator")).join("")
-      : `<tr><td colspan="9"><div class="empty-state compact-empty"><h3>This incubator is empty</h3><p>Choose an open slot above to add an egg.</p></div></td></tr>`;
+      : `<tr><td colspan="10"><div class="empty-state compact-empty"><h3>This incubator is empty</h3><p>Choose an open slot above to add an egg.</p></div></td></tr>`;
     $("#incubator-roster-count").textContent = `${eggs.length} ${eggs.length === 1 ? "egg" : "eggs"} · ${INCUBATOR_CAPACITY - eggs.length} open ${INCUBATOR_CAPACITY - eggs.length === 1 ? "slot" : "slots"}`;
   }
 
@@ -980,6 +1035,7 @@
           ${recordedMutationStackTotal(dino) ? `<span class="badge mutation-stack-badge">${recordedMutationStackTotal(dino)} stat ${recordedMutationStackTotal(dino) === 1 ? "stack" : "stacks"}</span>` : ""}
           ${playerLevelSum(dino) ? `<span class="badge">+${playerLevelSum(dino)} player levels</span>` : ""}
           <span class="badge ${dino.imprintPercent === 100 ? "imprint-complete" : dino.imprintPercent > 0 ? "imprint-partial" : ""}">Imprint ${dino.imprintPercent}%</span>
+          ${dinoTags(dino).map(tag => `<span class="badge category-tag">${esc(tag)}</span>`).join("")}
         </div>
         <section class="quality-card">
           <div class="quality-summary">
@@ -1336,6 +1392,7 @@
       sex: $("#dino-sex").value,
       status,
       line: $("#dino-tag").value.trim(),
+      tags: $("#dino-tags").value,
       gameId: $("#dino-game-id").value.trim(),
       origin: $("#dino-origin").value,
       tamingEffectiveness: Number($("#dino-taming-effectiveness").value) || 0,
@@ -1543,6 +1600,7 @@
       if (has(creature, "sex") && ["Female", "Male"].includes(creature.sex)) setValue("#dino-sex", creature.sex);
       if (has(creature, "status") && DINO_STATUSES.includes(creature.status)) setValue("#dino-status", creature.status);
       if (has(creature, "line") || has(creature, "tag")) setValue("#dino-tag", creature.line ?? creature.tag);
+      if (has(creature, "tags")) setDinoTags(creature.tags);
       if (has(creature, "gameId") || has(creature, "dinoId") || has(creature, "dinoId1") || has(creature, "dinoId2")) {
         setValue("#dino-game-id", transferredGameId(creature.gameId ?? creature.dinoId, creature));
       }
@@ -1952,6 +2010,7 @@
     const incubator = getIncubator(placement?.incubatorId);
     dinoFormPrefill = { editing: Boolean(dino), manualStats: new Set(), manualColors: new Set(), colorSuggestions: new Map(), suggestions: {} };
     $("#dino-form").reset();
+    setDinoTags(dino?.tags || "");
     $("#dino-id").value = dino?.id || "";
     $("#dino-name").placeholder = placement ? `Optional · ${defaultDinoName("Egg", placement.incubatorId, placement.incubatorSlot)}` : "Optional · defaults to Unnamed";
     $("#dialog-kicker").textContent = dino ? (isEggDino(dino) ? "EDIT EGG" : "EDIT SPECIMEN") : placement ? "NEW EGG" : "NEW SPECIMEN";
@@ -2003,6 +2062,62 @@
     $("#dino-dialog").close();
   }
 
+  function renderDinoTagEditor() {
+    const tags = parseTags($("#dino-tags").value);
+    $("#dino-tag-list").innerHTML = tags.map((tag, index) => `<button class="tag-input-badge" type="button" data-remove-dino-tag="${index}" aria-label="Remove tag ${esc(tag)}"><span>${esc(tag)}</span><b aria-hidden="true">×</b></button>`).join("");
+  }
+
+  function setDinoTags(value, syncTransfer = false) {
+    $("#dino-tags").value = serializeTags(value);
+    $("#dino-tag-draft").value = "";
+    renderDinoTagEditor();
+    if (syncTransfer) syncTransferCodeFromForm();
+  }
+
+  function appendDinoTags(values, syncTransfer = false) {
+    const tags = parseTags([...parseTags($("#dino-tags").value), ...values]);
+    $("#dino-tags").value = serializeTags(tags);
+    renderDinoTagEditor();
+    if (syncTransfer) syncTransferCodeFromForm();
+  }
+
+  function commitDinoTagDraft(syncTransfer = false) {
+    const draft = $("#dino-tag-draft");
+    const value = draft.value.trim();
+    if (!value) return false;
+    appendDinoTags([value], syncTransfer);
+    draft.value = "";
+    return true;
+  }
+
+  function handleDinoTagDraftInput(event) {
+    const value = event.target.value;
+    if (!value.includes(",")) return;
+    const pieces = value.split(",");
+    event.target.value = pieces.pop();
+    appendDinoTags(pieces);
+  }
+
+  function handleDinoTagDraftKeydown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitDinoTagDraft(true);
+      return;
+    }
+    if (event.key === "Backspace" && !event.target.value && parseTags($("#dino-tags").value).length) {
+      const tags = parseTags($("#dino-tags").value);
+      tags.pop();
+      setDinoTags(tags, true);
+    }
+  }
+
+  function removeDinoTag(index) {
+    const tags = parseTags($("#dino-tags").value);
+    tags.splice(index, 1);
+    setDinoTags(tags, true);
+    $("#dino-tag-draft").focus();
+  }
+
   function syncOriginFields() {
     const bred = $("#dino-origin").value === "bred";
     $("#dino-taming-effectiveness").disabled = bred;
@@ -2043,6 +2158,7 @@
 
   function saveDinoFromForm(event) {
     event.preventDefault();
+    commitDinoTagDraft();
     const id = $("#dino-id").value;
     const existing = getDino(id);
     const colorRegions = readColorRegionsFromForm();
@@ -2077,6 +2193,7 @@
       incubatorId,
       incubatorSlot,
       tag: $("#dino-tag").value.trim(),
+      tags: $("#dino-tags").value,
       gameId: $("#dino-game-id").value.trim(),
       origin: $("#dino-origin").value,
       tamingEffectiveness: $("#dino-taming-effectiveness").value,
@@ -2355,9 +2472,9 @@
     const fatherId = uid();
     const childId = uid();
     state.dinos = [
-      normalizeDino({ id: motherId, name: "Vega", species: "Rex", sex: "Female", status: "Breeder", tag: "HP line", mutationsMaternal: 0, mutationsPaternal: 3, stats: { health: 46, stamina: 34, oxygen: 24, food: 28, weight: 40, melee: 39, speed: 18 }, traits: ["Weight-Frail III"], colors: "R0 forest, R4 cream", notes: "Foundation health breeder." }),
-      normalizeDino({ id: fatherId, name: "Knox", species: "Rex", sex: "Male", status: "Breeder", tag: "Melee line", mutationsMaternal: 2, mutationsPaternal: 0, stats: { health: 40, stamina: 38, oxygen: 22, food: 27, weight: 36, melee: 47, speed: 20 }, colors: "R0 charcoal, R5 red" }),
-      normalizeDino({ id: childId, name: "Ember", species: "Rex", sex: "Female", status: "Growing", tag: "F1 combine", gameId: "ASA-REX-00427", motherId, fatherId, mutationsMaternal: 3, mutationsPaternal: 2, stats: { health: 46, stamina: 38, oxygen: 24, food: 28, weight: 40, melee: 47, speed: 20 }, mutationStacks: { health: 1 }, leveledStats: { health: 18, stamina: 8, weight: 12, melee: 22 }, currentStats: { health: "30800", stamina: "2520", weight: "918", melee: "765.4" }, traits: ["Mutable Health III", "Kingslayer II"], imprintPercent: 100, imprinter: "Survivor", colors: "R0 charcoal, R5 red", notes: "Health rolled +2 over Vega; keep for the next combine." })
+      normalizeDino({ id: motherId, name: "Vega", species: "Rex", sex: "Female", status: "Breeder", tag: "HP line", tags: "boss army, health", mutationsMaternal: 0, mutationsPaternal: 3, stats: { health: 46, stamina: 34, oxygen: 24, food: 28, weight: 40, melee: 39, speed: 18 }, traits: ["Weight-Frail III"], colors: "R0 forest, R4 cream", notes: "Foundation health breeder." }),
+      normalizeDino({ id: fatherId, name: "Knox", species: "Rex", sex: "Male", status: "Breeder", tag: "Melee line", tags: "boss army, melee", mutationsMaternal: 2, mutationsPaternal: 0, stats: { health: 40, stamina: 38, oxygen: 22, food: 27, weight: 36, melee: 47, speed: 20 }, colors: "R0 charcoal, R5 red" }),
+      normalizeDino({ id: childId, name: "Ember", species: "Rex", sex: "Female", status: "Growing", tag: "F1 combine", tags: "boss army, combine", gameId: "ASA-REX-00427", motherId, fatherId, mutationsMaternal: 3, mutationsPaternal: 2, stats: { health: 46, stamina: 38, oxygen: 24, food: 28, weight: 40, melee: 47, speed: 20 }, mutationStacks: { health: 1 }, leveledStats: { health: 18, stamina: 8, weight: 12, melee: 22 }, currentStats: { health: "30800", stamina: "2520", weight: "918", melee: "765.4" }, traits: ["Mutable Health III", "Kingslayer II"], imprintPercent: 100, imprinter: "Survivor", colors: "R0 charcoal, R5 red", notes: "Health rolled +2 over Vega; keep for the next combine." })
     ];
     selectedId = childId;
     saveState("Demo family loaded");
@@ -2374,6 +2491,8 @@
   function handleDocumentClick(event) {
     const sort = event.target.closest("[data-sort-key]");
     if (sort) return cycleRosterSort(sort.dataset.sortKey);
+    const removeTag = event.target.closest("[data-remove-dino-tag]");
+    if (removeTag) return removeDinoTag(toInt(removeTag.dataset.removeDinoTag));
     const addIncubator = event.target.closest("[data-add-incubator]");
     if (addIncubator) return openIncubatorDialog();
     const selectIncubator = event.target.closest("[data-select-incubator-id]");
@@ -2415,6 +2534,20 @@
     window.addEventListener("resize", () => { if (activeView === "lineage") drawLineageConnectors(); });
     $$(".nav-tab").forEach(tab => tab.addEventListener("click", () => switchView(tab.dataset.view)));
     ["#search-input", "#species-filter", "#sex-filter", "#status-filter"].forEach(selector => $(selector).addEventListener(selector === "#search-input" ? "input" : "change", renderRoster));
+    $("#tag-filter-options").addEventListener("change", event => {
+      const checkbox = event.target.closest("[data-tag-filter]");
+      if (!checkbox) return;
+      if (checkbox.checked) selectedTagFilters.add(checkbox.value);
+      else selectedTagFilters.delete(checkbox.value);
+      updateTagFilterSummary();
+      renderRoster();
+    });
+    $("#clear-tag-filter").addEventListener("click", () => {
+      selectedTagFilters.clear();
+      $$('[data-tag-filter]', $("#tag-filter-options")).forEach(checkbox => { checkbox.checked = false; });
+      updateTagFilterSummary();
+      renderRoster();
+    });
     $("#show-archived").addEventListener("change", event => {
       uiPreferences.showArchived = event.target.checked;
       saveUiPreferences();
@@ -2423,6 +2556,10 @@
     $("#dino-form").addEventListener("submit", saveDinoFromForm);
     $("#dino-form").addEventListener("input", handleDinoFormTransferChange);
     $("#dino-form").addEventListener("change", handleDinoFormTransferChange);
+    $("#dino-tag-draft").addEventListener("input", handleDinoTagDraftInput);
+    $("#dino-tag-draft").addEventListener("keydown", handleDinoTagDraftKeydown);
+    $("#dino-tag-draft").addEventListener("blur", () => commitDinoTagDraft(true));
+    $("#dino-tag-control").addEventListener("click", event => { if (!event.target.closest("[data-remove-dino-tag]")) $("#dino-tag-draft").focus(); });
     $("#dino-transfer-code").addEventListener("input", handleTransferCodeInput);
     $("#copy-transfer-code").addEventListener("click", copyTransferCode);
     $("#dino-status").addEventListener("change", () => syncEggPlacementFields());

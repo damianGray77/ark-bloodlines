@@ -17,7 +17,7 @@ ARK Bloodlines is released under the [MIT License](LICENSE). The bundled ARK Sma
 
 ## What it tracks
 
-- Dinos, species, breeding line, sex, status, six mapped ARK color regions, and notes
+- Dinos, species, breeding line, comma-delimited category tags, sex, status, six mapped ARK color regions, and notes
 - Multiple named incubators with ten numbered egg slots each
 - Full editable egg records with Hatch-to-Growing and Delete workflows
 - Inherited wild/breeding stat rolls plus explicit per-stat mutation stacks (`+2` points per stack)
@@ -40,7 +40,7 @@ Each resulting stat is calculated as `Inherited roll + (2 × mutation stacks)`. 
 
 Version 1 browser records and backups stored final point totals. When they are opened by this version, the app separates any recorded stack bonuses from those totals so the resulting stats and levels do not change during migration.
 
-Version 3 adds incubator entities and egg placement without changing older dino records. Eggs remain complete dino records with parents, inherited stats, mutation counters, colors, traits, and notes, but they are excluded from the Herd register, breeding candidates, and active-line quality comparisons until **Hatch** changes their status to `Growing`. If an imported egg has a missing or conflicting placement, the app moves it into an automatically created recovered incubator rather than hiding or discarding it.
+Version 3 adds incubator entities and egg placement without changing older dino records. Eggs remain complete dino records with parents, inherited stats, mutation counters, colors, traits, and notes, but they are excluded from the Herd register, breeding candidates, and active-line quality comparisons until **Hatch** changes their status to `Growing`. If an imported egg has a missing or conflicting placement, the app moves it into an automatically created recovered incubator rather than hiding or discarding it. Version 4 adds a separate comma-delimited `tags` field; the existing `tag` field continues to store the breeding Line so line-based quality comparisons remain unchanged.
 
 Legacy color notes such as `R0 62 R1 0 R2 36` are mapped automatically into six ARK color-region selectors. The bundled IDs, names, and swatches are derived from the same MIT-licensed ARK Smart Breeding data used by the stat calculator and include ASA's dye-derived creature colors at IDs 128–254; IDs 101–127 are unused. Breeding Lab color samples are deterministic for a selected pair so the display remains stable, but the game still rolls each differing region independently.
 
@@ -50,7 +50,7 @@ Every Add/Edit form includes a live **Transfer code** field. Its `ABL1:` Base64U
 
 Scanner payloads deliberately use a flatter schema than app-generated records so the ASA Blueprint graph can remain small. During import, the app joins ARK's `DinoID1` and `DinoID2` components into the same decimal string shown by the game, removes the ` - Lvl N` suffix from ancestor names, maps known ARK name tags such as `Argent` to their canonical species name, and translates scanner field aliases into the app's nested record shape. ASA can expose an ancestor ID component in the wrong numbered field, so each surviving parent-ID component must match either boundary of the tracked game ID; all supplied components must corroborate the same-species parent-name match instead of selecting by name alone.
 
-The herd register includes a dedicated sortable **Line** column. Its headers—including the calculated `G0`, `G1`, and later generation labels—cycle through ascending, descending, and the default species-then-line-then-name order. Program sorting uses the numeric quality score; Top genes sorting compares the displayed inherited gene values from strongest to weakest.
+The herd register includes separate sortable **Line** and **Tags** columns. The tag filter supports multiple exact selections and requires a record to contain every selected tag. Its headers—including the calculated `G0`, `G1`, and later generation labels—cycle through ascending, descending, and the default species-then-line-then-name order. Program sorting uses the numeric quality score; Top genes sorting compares the displayed inherited gene values from strongest to weakest.
 
 Retired, Culled, and Cryo dinos are archived statuses hidden from the Herd register by default. **Show archived** reveals them, and that device-local preference is remembered without changing exported breeding data. Choosing any archived status in the status filter reveals its records automatically. Archived dinos remain in pedigrees and historical breeding records but are excluded from active-line quality comparisons.
 
