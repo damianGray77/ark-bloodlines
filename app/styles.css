@@ -216,6 +216,9 @@ button:focus-visible, summary:focus-visible, .brand:focus-visible, .roster-row:f
 .view { display: none; animation: appear .18s ease-out; }
 .view.is-active { display: block; }
 @keyframes appear { from { opacity: 0; transform: translateY(4px); } }
+@media (min-width: 1101px) {
+  #herd-view { width: calc(100vw - 2.5rem); margin-left: calc(50% - 50vw + 1.25rem); }
+}
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin: 1rem 0 .9rem; }
 .section-heading h2 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.75rem); letter-spacing: -.025em; }
 .section-note { max-width: 490px; margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.55; text-align: right; }
@@ -225,7 +228,7 @@ button:focus-visible, summary:focus-visible, .brand:focus-visible, .roster-row:f
 .field-compact select { margin-top: .4rem; color: var(--text); font: 500 .8rem var(--sans); letter-spacing: 0; text-transform: none; }
 
 .panel { border: 1px solid var(--line); border-radius: var(--radius); background: rgba(19,26,22,.82); box-shadow: 0 10px 35px rgba(0,0,0,.12); }
-.herd-layout { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(300px, .85fr); gap: .9rem; align-items: start; }
+.herd-layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(300px, 22vw, 380px); gap: .9rem; align-items: start; }
 .roster-panel { min-width: 0; overflow: hidden; }
 .toolbar { position: relative; display: grid; grid-template-columns: minmax(220px, 1fr) repeat(5, auto); gap: .55rem; padding: .75rem; border-bottom: 1px solid var(--line); }
 .toolbar select { min-width: 125px; color: var(--muted); font-size: .73rem; }
