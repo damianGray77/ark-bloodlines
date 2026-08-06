@@ -114,6 +114,17 @@
   const serializeTags = value => parseTags(value).join(", ");
   const dinoTags = dino => parseTags(dino?.tags);
 
+  function tagHue(value) {
+    let hash = 2166136261;
+    for (const character of normalizeTagKey(value)) {
+      hash ^= character.codePointAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) % 360;
+  }
+
+  const tagColorStyle = value => `--tag-hue:${tagHue(value)}`;
+
   let state = loadState();
   let uiPreferences = loadUiPreferences();
   let selectedId = state.dinos.find(dino => !isEggDino(dino))?.id || state.dinos[0]?.id || "";
@@ -718,7 +729,7 @@
     selectedTagFilters = new Set([...selectedTagFilters].filter(key => labels.has(key)));
     const options = [...labels.entries()].sort((left, right) => left[1].localeCompare(right[1], undefined, { sensitivity: "base", numeric: true }));
     $("#tag-filter-options").innerHTML = options.length
-      ? options.map(([key, label]) => `<label><input type="checkbox" value="${esc(key)}" data-tag-filter ${selectedTagFilters.has(key) ? "checked" : ""}><span>${esc(label)}</span><small>${counts.get(key)}</small></label>`).join("")
+      ? options.map(([key, label]) => `<label><input type="checkbox" value="${esc(key)}" data-tag-filter ${selectedTagFilters.has(key) ? "checked" : ""}><span class="tag-filter-tag" style="${tagColorStyle(label)}">${esc(label)}</span><small>${counts.get(key)}</small></label>`).join("")
       : `<span class="tag-filter-empty">No tags yet</span>`;
     updateTagFilterSummary();
   }
@@ -816,7 +827,7 @@
     return `<tr class="roster-row ${inHerd && dino.id === selectedId ? "is-selected" : ""}" ${inHerd ? `data-select-id="${esc(dino.id)}" tabindex="0"` : ""}>
       <td><div class="specimen-cell"><span class="specimen-avatar">${esc(initials(displayName))}</span><div><strong>${esc(displayName)}</strong><small title="${dino.gameId ? `Dino ID: ${esc(dino.gameId)}` : ""}">${esc(dino.species)}${slotLabel}${dino.gameId ? ` · ID ${esc(dino.gameId)}` : ""}</small></div></div></td>
       <td class="line-cell ${lineName ? "" : "is-unassigned"}"><span title="${esc(lineName || "Unassigned line")}">${esc(lineName || "Unassigned")}</span></td>
-      <td class="tags-cell ${tags.length ? "" : "is-unassigned"}">${tags.length ? `<div class="row-tag-list">${tags.map(tag => `<span class="tag-badge">${esc(tag)}</span>`).join("")}</div>` : `<span>None</span>`}</td>
+      <td class="tags-cell ${tags.length ? "" : "is-unassigned"}">${tags.length ? `<div class="row-tag-list">${tags.map(tag => `<span class="tag-badge" style="${tagColorStyle(tag)}">${esc(tag)}</span>`).join("")}</div>` : `<span>None</span>`}</td>
       <td><span class="sex-badge ${dino.sex.toLowerCase()}">${dino.sex === "Female" ? "♀" : "♂"} ${esc(dino.sex)}</span></td>
       <td class="generation-cell">G${generationOf(dino)}</td>
       <td class="level-cell"><strong>${currentLevel(dino)}</strong><small>base ${baseLevel(dino)}${playerLevelSum(dino) ? ` · +${playerLevelSum(dino)}` : ""}</small></td>
@@ -1035,7 +1046,7 @@
           ${recordedMutationStackTotal(dino) ? `<span class="badge mutation-stack-badge">${recordedMutationStackTotal(dino)} stat ${recordedMutationStackTotal(dino) === 1 ? "stack" : "stacks"}</span>` : ""}
           ${playerLevelSum(dino) ? `<span class="badge">+${playerLevelSum(dino)} player levels</span>` : ""}
           <span class="badge ${dino.imprintPercent === 100 ? "imprint-complete" : dino.imprintPercent > 0 ? "imprint-partial" : ""}">Imprint ${dino.imprintPercent}%</span>
-          ${dinoTags(dino).map(tag => `<span class="badge category-tag">${esc(tag)}</span>`).join("")}
+          ${dinoTags(dino).map(tag => `<span class="badge category-tag" style="${tagColorStyle(tag)}">${esc(tag)}</span>`).join("")}
         </div>
         <section class="quality-card">
           <div class="quality-summary">
@@ -2064,7 +2075,7 @@
 
   function renderDinoTagEditor() {
     const tags = parseTags($("#dino-tags").value);
-    $("#dino-tag-list").innerHTML = tags.map((tag, index) => `<button class="tag-input-badge" type="button" data-remove-dino-tag="${index}" aria-label="Remove tag ${esc(tag)}"><span>${esc(tag)}</span><b aria-hidden="true">×</b></button>`).join("");
+    $("#dino-tag-list").innerHTML = tags.map((tag, index) => `<button class="tag-input-badge" type="button" style="${tagColorStyle(tag)}" data-remove-dino-tag="${index}" aria-label="Remove tag ${esc(tag)}"><span>${esc(tag)}</span><b aria-hidden="true">×</b></button>`).join("");
   }
 
   function setDinoTags(value, syncTransfer = false) {
